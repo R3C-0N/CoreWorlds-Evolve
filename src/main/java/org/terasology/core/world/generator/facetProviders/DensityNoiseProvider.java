@@ -53,13 +53,15 @@ public class DensityNoiseProvider implements ScalableFacetProvider {
         float[] largeNoiseValues = largeNoise.noise(densityRegion, scale);
         float[] densityValues = densityFacet.getInternal();
 
-        // surfaceRoughnessFacet's region isn't guaranteed to be as large as densityRegion - its border
-        // is computed independently, from whatever the largest border any *other* active provider
-        // requires on it happens to be, which can be smaller than what densityRegion ends up padded to
-        // (e.g. once a provider like Caves' asks for extra border on DensityFacet specifically). Clamp
-        // into surfaceRoughnessFacet's own bounds rather than assuming the two regions always match, to
-        // avoid reading out of bounds. (BlockArea's 2nd axis, minY()/maxY(), is world Z here - 2D facets
-        // are indexed (x, z), not (x, y).)
+        // Defensive: densityRegion can be wider in X/Z than surfaceRoughnessFacet's area, in which case
+        // reading roughness per density column would run off the end of it. That mismatch is an engine
+        // bug rather than anything this provider controls - WorldBuilder.determineBorders propagates
+        // borders in a single reverse pass over a provider list whose order is not a guaranteed
+        // topological order, so a sides border another module asks for on DensityFacet (Caves'
+        // CaveToSurfaceProvider requires it with sides=3) can land after this provider has already
+        // decided how much SurfaceRoughnessFacet needs. Clamping keeps worldgen alive on engines that
+        // still have that bug; it is a no-op once the borders are sized correctly.
+        // (BlockArea's 2nd axis, minY()/maxY(), is world Z here - 2D facets are indexed (x, z).)
         BlockAreac roughnessArea = surfaceRoughnessFacet.getWorldArea();
 
         int x = densityRegion.minX();
