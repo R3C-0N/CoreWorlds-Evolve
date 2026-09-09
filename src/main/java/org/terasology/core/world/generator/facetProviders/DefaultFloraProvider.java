@@ -47,6 +47,13 @@ public class DefaultFloraProvider extends SurfaceObjectProvider<Biome, FloraType
             FloraType.FLOWER, 0.1f,
             FloraType.MUSHROOM, 0.05f);
 
+    /**
+     * How thickly each biome is planted.
+     * <p>
+     * Every value of {@link CoreBiome} must appear here: the constructor below reads this map for
+     * all of them and unboxes the result, so a missing entry is a null pointer at world start
+     * rather than an unplanted biome. The barren ones are therefore written down as zero.
+     */
     private Map<CoreBiome, Float> biomeProbs = ImmutableMap.<CoreBiome, Float>builder()
             .put(CoreBiome.FOREST, 0.3f)
             .put(CoreBiome.PLAINS, 0.2f)
@@ -54,7 +61,24 @@ public class DefaultFloraProvider extends SurfaceObjectProvider<Biome, FloraType
             .put(CoreBiome.SNOW, 0.001f)
             .put(CoreBiome.BEACH, 0.001f)
             .put(CoreBiome.OCEAN, 0f)
-            .put(CoreBiome.DESERT, 0.001f).build();
+            .put(CoreBiome.DESERT, 0.001f)
+            // A taiga has an undergrowth, thinner than a temperate wood's; a savannah is mostly
+            // grass and little else, which makes it the thickest of the three.
+            .put(CoreBiome.TAIGA, 0.15f)
+            .put(CoreBiome.SAVANNA, 0.35f)
+            .put(CoreBiome.SWAMP, 0.3f)
+            // The extreme regions grow nothing. That is what makes them extreme, and it is why the
+            // player has to bring what it takes to be there.
+            .put(CoreBiome.ABYSS, 0f)
+            .put(CoreBiome.PACK_ICE, 0f)
+            .put(CoreBiome.ICE_SHELF, 0f)
+            .put(CoreBiome.VOLCANIC, 0f)
+            .put(CoreBiome.ARCANE, 0f)
+            // The miasma is the one extreme that is not sterile: it rots, so it grows mushrooms.
+            .put(CoreBiome.MIASMA, 0.1f)
+            // No column, no surface, nothing to plant on — see their declarations.
+            .put(CoreBiome.SKY, 0f)
+            .put(CoreBiome.UNDERGROUND, 0f).build();
 
     public DefaultFloraProvider() {
 
@@ -71,6 +95,14 @@ public class DefaultFloraProvider extends SurfaceObjectProvider<Biome, FloraType
         register(CoreBiome.BEACH, FloraType.FLOWER, 0);
         register(CoreBiome.DESERT, FloraType.MUSHROOM, 0);
         register(CoreBiome.SNOW, FloraType.MUSHROOM, 0);
+        // A savannah is grass and nothing but: no mushrooms, and flowers only just.
+        register(CoreBiome.SAVANNA, FloraType.MUSHROOM, 0);
+        register(CoreBiome.SAVANNA, FloraType.FLOWER, 0.01f);
+        // The two wet biomes invert the usual mixture — this is where mushrooms belong.
+        register(CoreBiome.SWAMP, FloraType.MUSHROOM, 0.15f);
+        register(CoreBiome.MIASMA, FloraType.MUSHROOM, 0.09f);
+        register(CoreBiome.MIASMA, FloraType.FLOWER, 0);
+        register(CoreBiome.MIASMA, FloraType.GRASS, 0.01f);
     }
 
     /**

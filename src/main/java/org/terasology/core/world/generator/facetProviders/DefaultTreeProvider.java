@@ -59,6 +59,21 @@ public class DefaultTreeProvider extends SurfaceObjectProvider<Biome, TreeGenera
         register(CoreBiome.PLAINS, Trees.oakTree(), 0.01f);
 
         register(CoreBiome.DESERT, Trees.cactus(), 0.04f);
+
+        // A taiga is a conifer forest, so it is denser in pines than the temperate wood and has
+        // almost nothing else.
+        register(CoreBiome.TAIGA, Trees.pineTree(), 0.22f);
+        register(CoreBiome.TAIGA, Trees.birchTree(), 0.03f);
+
+        // A savannah is open ground with the occasional tree, not a thin forest.
+        register(CoreBiome.SAVANNA, Trees.oakTree(), 0.02f);
+
+        // A swamp grows trees where it is not water. TODO species — these are the temperate oaks
+        // for want of anything that looks waterlogged; a swamp wants its own generator.
+        register(CoreBiome.SWAMP, Trees.oakVariationTree(), 0.08f);
+
+        // The extreme regions grow no trees at all, and the table is sparse: saying nothing here is
+        // how that is said.
     }
 
     /**
