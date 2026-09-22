@@ -84,10 +84,19 @@ public enum CoreBiome implements Biome {
      */
     UNDERGROUND("Underground");
 
+    /**
+     * How far under the ground ordinary rock gives way to hard stone, as a density.
+     * <p>
+     * The depth at which a flint pick stops being the whole answer, and the floor under every ore
+     * band but the shallowest: seven of the ten sit entirely below it.
+     */
+    public static final float HARD_ROCK_DEPTH = 40;
+
     private final Name id;
     private final String displayName;
 
     private Block stone;
+    private Block hardStone;
     private Block sand;
     private Block grass;
     private Block snow;
@@ -111,6 +120,9 @@ public enum CoreBiome implements Biome {
     public void initialize() {
         BlockManager blockManager = CoreRegistry.get(BlockManager.class);
         stone = blockManager.getBlock("CoreAssets:stone");
+        // Harder than stone, a pickaxe job from flint on, and until now placed by nothing at all:
+        // the tier that is named after it had no rock in the world to point at.
+        hardStone = blockManager.getBlock("CoreAssets:HardStone");
         sand = blockManager.getBlock("CoreAssets:Sand");
         grass = blockManager.getBlock("CoreAssets:Grass");
         snow = blockManager.getBlock("CoreAssets:Snow");
@@ -262,54 +274,75 @@ public enum CoreBiome implements Biome {
         }
     }
 
-    @Override
-    public Block getBelowSurfaceBlock(Vector3ic pos, float density) {
+    /**
+     * How deep the soil of this biome runs before the rock starts, as a density.
+     * <p>
+     * Density is {@code elevation - y} in this chain, so it <em>is</em> the depth under the ground.
+     * <p>
+     * Pulled out of {@link #getBelowSurfaceBlock} rather than left inside it because the ore
+     * generator needs the very same frontier and cannot ask for it through that method, which
+     * answers with a {@link Block} and so wants a block manager the facet chain does not have. Two
+     * copies of this number would be two chances to disagree, and this one silently decides whether
+     * the shallow half of the coal is in rock or in soil.
+     */
+    public float rockDepth() {
         switch (this) {
-            case DESERT:
-                if (density > 8) {
-                    return stone;
-                } else {
-                    return sand;
-                }
-            case BEACH:
-                if (density > 2) {
-                    return stone;
-                } else {
-                    return sand;
-                }
             case OCEAN:
             case ABYSS:
-                return stone;
             case VOLCANIC:
-                return basalt;
             case ARCANE:
-                return crystal;
+                return 0;
+            case BEACH:
+                return 2;
+            case DESERT:
             case SWAMP:
             case MIASMA:
-                // Peat is a surface material: a few blocks of it, then the rock underneath.
-                if (density > 8) {
-                    return stone;
-                } else {
-                    return peat;
-                }
             case PACK_ICE:
-                if (density > 8) {
-                    return stone;
-                } else {
-                    return packIce;
-                }
             case ICE_SHELF:
-                if (density > 8) {
-                    return stone;
-                } else {
-                    return shelfIce;
-                }
+                // Peat is a surface material: a few blocks of it, then the rock underneath. Same
+                // for the sand of a desert and for the lid of a cap.
+                return 8;
             default:
-                if (density > 32) {
+                return 32;
+        }
+    }
+
+    /**
+     * The block under the surface one.
+     * <p>
+     * Two questions, and they are asked in that order: is this soil or rock, and if it is rock,
+     * which rock. Below {@link #HARD_ROCK_DEPTH} the answer is hard stone for every biome — basalt
+     * and crystal included, because the grade lock holds everywhere and a region must not offer a
+     * shortcut to the bottom.
+     */
+    @Override
+    public Block getBelowSurfaceBlock(Vector3ic pos, float density) {
+        if (density > rockDepth()) {
+            if (density > HARD_ROCK_DEPTH) {
+                return hardStone;
+            }
+            switch (this) {
+                case VOLCANIC:
+                    return basalt;
+                case ARCANE:
+                    return crystal;
+                default:
                     return stone;
-                } else {
-                    return dirt;
-                }
+            }
+        }
+        switch (this) {
+            case DESERT:
+            case BEACH:
+                return sand;
+            case SWAMP:
+            case MIASMA:
+                return peat;
+            case PACK_ICE:
+                return packIce;
+            case ICE_SHELF:
+                return shelfIce;
+            default:
+                return dirt;
         }
     }
 
